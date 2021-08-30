@@ -64,6 +64,10 @@ function Get-OpenAFEventFrames {
     #$AfDatabase = $AfServer.Databases["PI System Health Monitoring (Radix)"]
     $Afdatabases = [System.Collections.ArrayList]@()
     
+    if($inputRange -eq $null){
+        $inputRange = "14d"
+    }
+
     if($databaseName -ne $null){
         $Afdatabases = $databaseName
     }
