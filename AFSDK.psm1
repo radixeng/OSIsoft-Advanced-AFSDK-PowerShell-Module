@@ -41,10 +41,9 @@ function Get-OpenAFEventFrames {
     Mandatory Parameter: AFServerName - Specifies what AF Server to search.
     Optional Paramaters:
         -inputRange specifies time range in PI acceptable time formats (ex: "14d") default is set to 2 weeks.
-        -database specifies a certain database within AFServerName parameter if you only want to search one database.
+        -databaseName specifies a certain database within AFServerName parameter if you only want to search one database.
     #> 
-    # 
-    # 
+
     Param(
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName)]
         [string]
