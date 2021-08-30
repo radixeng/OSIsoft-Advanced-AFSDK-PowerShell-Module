@@ -102,5 +102,36 @@ function Get-PiPointProperties {}
 
 function Convert-ObjectsToPsCustomObjects{
     # Generically converts Objects to PSCustom Objects to enable use with PowerShell functions like Export-Csv and Out-Gridview.
+    Param(
+         [Parameter(ValueFromPipeline)]
+         [Object[]]
+         $ObjectArray,
+
+         [Parameter(Mandatory=$False)]
+         [String[]]
+         $Properties
+     )
+
+     $PSCustomObjects = [Collections.Generic.List[PSCustomObject]]::new()
+ 
+     foreach ($object in $objectarray){
+         $ObjDict = [Collections.Specialized.OrderedDictionary]::new()
+         $defaultpropertyList = $object.PSObject.Properties.Name
+        if($Properties -eq $null){
+            foreach($property in $defaultpropertyList){
+                $ObjDict.Add($property, $object.$property)
+            }
+            $PSCustomObjects.Add([PSCustomObject]$ObjDict)
+        }
+        else {
+            foreach($property in $Properties){
+                $ObjDict.Add($property, $object.$property)         
+            }
+            $PSCustomObjects.Add([PSCustomObject]$ObjDict)
+        }
+    }
+ 
+ 
+     return $PSCustomObjects
 }
 
