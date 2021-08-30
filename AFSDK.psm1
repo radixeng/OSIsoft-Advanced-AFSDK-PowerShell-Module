@@ -36,8 +36,62 @@ function Get-AfAnalysesOutputPiPoints {
 function Get-AllAfAnalysesFromAfServer {}
 
 function Get-OpenAFEventFrames {
-    # From an AF Database or from an AF Server (use parameter sets), retrieve an array of EventFrames that are open.
-}
+    <#
+    From an AF Database or from an AF Server (use parameter sets), retrieve an array of EventFrames that are open.
+    Mandatory Parameter: AFServerName - Specifies what AF Server to search.
+    Optional Paramaters:
+        -inputRange specifies time range in PI acceptable time formats (ex: "14d") default is set to 2 weeks.
+        -database specifies a certain database within AFServerName parameter if you only want to search one database.
+    #> 
+    # 
+    # 
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName)]
+        [string]
+        $AfServerName,
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $inputRange,
+
+        [Parameter(mandatory =$false)]
+        [string]
+        $databaseName
+    )
+    #find af database object using servername
+    
+    $AfServer = [OSIsoft.AF.PISystems]::new()[$AfServerName]
+    
+    #$AfDatabase = $AfServer.Databases["PI System Health Monitoring (Radix)"]
+    $Afdatabases = [System.Collections.ArrayList]@()
+    
+    if($databaseName -ne $null){
+        $Afdatabases = $databaseName
+    }
+    else{
+        $Afdatabases = $Afserver.Databases
+    }
+
+    foreach($AfDatabase in $Afdatabases) {
+                  
+        $searchTokens = [System.Collections.ArrayList]@()
+
+        $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
+        [OSIsoft.AF.Search.AFSearchFilter]::Start,
+        [OSIsoft.AF.Search.AFSearchOperator]::GreaterThan,
+        [OSIsoft.AF.Time.AFTime]::new(-$inputRange)
+        )) | Out-Null
+        
+        [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
+        $count = $AFEventFrameSearch.GetTotalCount()
+
+        Write-Host "$count EF's found."
+
+        $AFEventFrames = $AFEventFrameSearch.FindObjects(0, $true, 500)
+
+        return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AFEventFrames
+        
+    }
 
 function Stop-EventFrames {
     # Set the current time as the end time for a list of AF EventFrames.
