@@ -4,10 +4,7 @@ if (
 ) {
     throw "OSIsoft.AFSDK assembly not found." # TODO: Make this a missing assembly reference.
 }
-[OSIsoft.AF.AF]
 
-[Regex]::Match("OSIsoft.AFSDK", "OSIsoft.AFSDK").Success
-"OSIsoft.AFSDK" -eq "OSIsoft.AFSDk"
 function Get-AfAnalysisInputPiPoints {
     # Returns a list of PI Points that act as inputs for a list of Analyses.
     [CmdletBinding()]
