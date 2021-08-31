@@ -86,7 +86,7 @@ function Get-AllAfAnalysesFromAfServer {
         $AfServerName
         )
     
-    $AfServer = [OSIsoft.AF.PISystems]::new("GRD001P-APP0029")
+    $AfServer = [OSIsoft.AF.PISystems]::new()[$AfServerName]
     $Afdatabases=$afserver.Database
     
     foreach($database in $Afdatabases){
