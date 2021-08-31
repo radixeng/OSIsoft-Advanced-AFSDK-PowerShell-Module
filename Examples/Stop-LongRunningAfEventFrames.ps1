@@ -1,0 +1,2 @@
+# For currently running AF EventFrames that have lasted beyond a certain time period, set the current datetime as the endtime.
+# Before committing these changes, back up these AFEventFrames to a csv (in their running state).
