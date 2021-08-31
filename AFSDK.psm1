@@ -57,17 +57,15 @@ function Get-OpenAFEventFrames {
         [string]
         $databaseName
     )
-    #find af database object using servername
-    
+    #Create PI System instance using input AFservername
     $AfServer = [OSIsoft.AF.PISystems]::new()[$AfServerName]
-    
-    #$AfDatabase = $AfServer.Databases["PI System Health Monitoring (Radix)"]
+    #Create empty list of databases
     $Afdatabases = [System.Collections.ArrayList]@()
-    
+    #Set default time range to 14d if user does not provide an argument
     if($inputRange -eq $null){
         $inputRange = "14d"
     }
-
+    #Set default databases to "all" if user does not provide an argument
     if($databaseName -ne $null){
         $Afdatabases = $databaseName
     }
@@ -76,22 +74,22 @@ function Get-OpenAFEventFrames {
     }
 
     foreach($AfDatabase in $Afdatabases) {
-                  
+        #Create empty list of search tokens
         $searchTokens = [System.Collections.ArrayList]@()
-
+        #Add search tokens to list
         $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
         [OSIsoft.AF.Search.AFSearchFilter]::Start,
         [OSIsoft.AF.Search.AFSearchOperator]::GreaterThan,
         [OSIsoft.AF.Time.AFTime]::new(-$inputRange)
         )) | Out-Null
-        
+        #Search all eventframes for using searchtokens
         [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
         $count = $AFEventFrameSearch.GetTotalCount()
-
+        #output number of Event Frames found for sanity check
         Write-Host "$count EF's found."
-
+        #Pull all eventframe objects in batches of 500
         $AFEventFrames = $AFEventFrameSearch.FindObjects(0, $true, 500)
-
+        #Return list of EventFrame Objects
         return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AFEventFrames
         
     }
@@ -105,7 +103,13 @@ function Get-PiVisionDisplayAfAttributes {}
 function Get-PiPointProperties {}
 
 function Convert-ObjectsToPsCustomObjects{
-    # Generically converts Objects to PSCustom Objects to enable use with PowerShell functions like Export-Csv and Out-Gridview.
+    <# 
+    Generically converts Objects to PSCustom Objects to enable use with PowerShell functions like Export-Csv and Out-Gridview.
+    Mandatory Parameter:
+        -ObjectArray is the array of AFEventFrameObjects user wants to convert.
+    Optional Parameters:
+        -Properties is a user defined list of properties from the AFEventFrameObject that will be output. Default value is set to all.
+    #>
     Param(
          [Parameter(ValueFromPipeline)]
          [Object[]]
@@ -115,19 +119,23 @@ function Convert-ObjectsToPsCustomObjects{
          [String[]]
          $Properties
      )
-
-     $PSCustomObjects = [Collections.Generic.List[PSCustomObject]]::new()
- 
+    #Create empty list of PSCustomObjects
+    $PSCustomObjects = [Collections.Generic.List[PSCustomObject]]::new()
+    #Iterate through each Object in user-provided ObjectArray and populate fields with values.
+    #Default fields are set to "All" if user does not provide a list of properties
      foreach ($object in $objectarray){
-         $ObjDict = [Collections.Specialized.OrderedDictionary]::new()
-         $defaultpropertyList = $object.PSObject.Properties.Name
+        #Creates an Ordered Dictionary for each object to preserve the order  
+        $ObjDict = [Collections.Specialized.OrderedDictionary]::new()
+        $defaultpropertyList = $object.PSObject.Properties.Name
         if($Properties -eq $null){
             foreach($property in $defaultpropertyList){
                 $ObjDict.Add($property, $object.$property)
             }
+            #Casts Ordered Dictionary into a PSCustomObject and adds it to a list of PSCustomObjects
             $PSCustomObjects.Add([PSCustomObject]$ObjDict)
         }
         else {
+            #Same steps, but for when user provides list of properties as argument.
             foreach($property in $Properties){
                 $ObjDict.Add($property, $object.$property)         
             }
