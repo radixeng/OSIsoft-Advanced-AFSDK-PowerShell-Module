@@ -7,16 +7,55 @@ if (
 
 function Get-AfAnalysesInputPiPoints {
     # Returns a list of PI Points that act as inputs for a list of Analyses.
-    [CmdletBinding()]
+    <#
+    Function returns a list of PI Points that act as inputs for a list of analyses
+    
+    #>
+    [CmdletBinding(DefaultParameterSetName="AnalysisObjectKnown")]
     Param(
-        [Parameter(Mandatory, ValueFromPipeline)]
+        [Parameter(position = 4, Mandatory = $false,  ParameterSetName = "FindAnalysisObject")]
+        [Parameter(position = 0, Mandatory = $true, ValueFromPipeline, ParameterSetName = "AnalysisObjectKnown")]
         [OSIsoft.AF.Analysis.AFAnalysis[]]
-        $AfAnalyses
+        $AfAnalysesObjects,
+
+        [Parameter(position = 0, Mandatory = $true, ParameterSetName = "FindAnalysisObject")]
+       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
+        [String]
+        $AfServerName,
+
+        [Parameter(position = 1, Mandatory = $true,  ParameterSetName = "FindAnalysisObject")]
+       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
+        [String]
+        $AfDatabaseName,
+
+        [Parameter(position = 2, Mandatory = $true,  ParameterSetName = "FindAnalysisObject")]
+       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
+        [String]
+        $AfElementName,
+
+        [Parameter(position = 3, Mandatory = $true,  ParameterSetName = "FindAnalysisObject")]
+       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
+        [String]
+        $AfAnalysisName
+
     )
-    $InputAfAttributes = $AfAnalyses.AnalysisRule.GetConfiguration().GetInputs()
+    if ($AfServerName -eq ""){
+        $AfAnalysesObjects
+    }
+    else{
+        [OSIsoft.AF.Analysis.AFAnalysis[]] $AfAnalysesObjects = [OSIsoft.AF.AFObject]::FindObject("\\$AfServerName\$AfDatabaseName\$AfElementName\Analyses[$AfAnalysisName]")
+    }
+    
+    $InputAfAttributes = $AfAnalysesObjects.AnalysisRule.GetConfiguration().GetInputs()
     # TODO: Ensure no duplicates are returned
     $PiPoints = $InputAfAttributes.PIPoint.Where({$_ -ne $null})
-    return [OSIsoft.AF.PI.PIPoint[]]$PiPoints
+    $uniquePiPoints = [System.Collections.ArrayList[]]@()
+    ForEach ($pipoint in $PiPoints) {
+        if($uniquePiPoints -notcontains $pipoint){
+            $uniquePiPoints.add($PiPoint)
+        }
+    }
+    return $uniquePiPoints
 }
 
 function Get-AfAnalysesOutputPiPoints {
@@ -93,6 +132,7 @@ function Get-OpenAFEventFrames {
         return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AFEventFrames
         
     }
+}
 
 function Stop-EventFrames {
     # Set the current time as the end time for a list of AF EventFrames.
