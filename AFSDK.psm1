@@ -69,10 +69,40 @@ function Get-AfAnalysesOutputPiPoints {
     $InputAfAttributes = $AfAnalyses.AnalysisRule.GetConfiguration().GetOutputs()
     # TODO: Ensure no duplicate PI Points are returned
     $PiPoints = $InputAfAttributes.PIPoint.Where({$_ -ne $null})
-    return [OSIsoft.AF.PI.PIPoint[]]$PiPoints
+    $uniquePiPoints = [System.Collections.ArrayList[]]@()
+    ForEach ($pipoint in $PiPoints) {
+        if($uniquePiPoints -notcontains $pipoint){
+            $uniquePiPoints.add($PiPoint)
+        }
+    }
+    return $uniquePiPoints
+    # return [OSIsoft.AF.PI.PIPoint[]]$PiPoints
 }
 
-function Get-AllAfAnalysesFromAfServer {}
+function Get-AllAfAnalysesFromAfServer {
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline)]
+        [String]
+        $AfServerName
+        )
+    
+    $AfServer = [OSIsoft.AF.PISystems]::new("GRD001P-APP0029")
+    $Afdatabases=$afserver.Database
+    
+    foreach($database in $Afdatabases){
+        $searchTokens = [System.Collections.ArrayList]@()
+        $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
+        [OSIsoft.AF.Search.AFSearchFilter]::Name,
+        [OSIsoft.AF.Search.AFSearchOperator]::Equal,
+        "*"
+        )) | Out-Null
+        [osisoft.af.search.afanalysissearch]$AFAnalysisSearch = [osisoft.af.search.afanalysissearch]::new($database, "AFAnalysisSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
+        $AFAnalyses = $AFAnalysisSearch.FindObjects(0, $true, 500)
+        $AFAnalysesCombined += $AFAnalyses 
+        
+    }
+    return $AFAnalysesCombined
+}
 
 function Get-OpenAFEventFrames {
     <#
