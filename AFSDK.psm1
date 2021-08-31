@@ -67,7 +67,6 @@ function Get-AfAnalysesOutputPiPoints {
         $AfAnalyses
     )
     $InputAfAttributes = $AfAnalyses.AnalysisRule.GetConfiguration().GetOutputs()
-    # TODO: Ensure no duplicate PI Points are returned
     $PiPoints = $InputAfAttributes.PIPoint.Where({$_ -ne $null})
     $uniquePiPoints = [System.Collections.ArrayList[]]@()
     ForEach ($pipoint in $PiPoints) {
@@ -102,6 +101,44 @@ function Get-AllAfAnalysesFromAfServer {
         
     }
     return $AFAnalysesCombined
+function Get-AllAfAnalyses {
+    # Returns an IEnumerable of all AF Analyses from an AF Database or AF Server
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, ParameterSetName="PiSystem")]
+        [OSIsoft.AF.PISystem]
+        $PiSystem,
+
+        [Parameter(Mandatory, ParameterSetName="AfDatabase")]
+        [OSIsoft.AF.AFDatabase]
+        $AfDatabase
+    )
+
+    switch ($PSCmdlet.ParameterSetName) {
+        PiSystem {
+            $AfDatabases = $PiSystem.Databases
+            Write-Debug "Finding AFAnalyses in $($AfDatabases.Count) AF Databases on $($PiSystem.Name)"
+            $SearchResultsPerAfDatabase = [System.Collections.ArrayList]::new()
+            foreach ($AfDatabase in $AfDatabases)
+            {
+                $AfDatabaseSearchResults = Get-AllAfAnalyses -AfDatabase $AfDatabase
+                if ($AfDatabaseSearchResults.Count -gt 0)
+                {
+                    $SearchResultsPerAfDatabase.Add([OSIsoft.AF.Analysis.AFAnalysis[]]$AfDatabaseSearchResults) |Out-Null
+                }
+            }
+            # Flatten list of lists.
+            $SearchResults = $SearchResultsPerAfDatabase | ForEach-Object { $_ }
+            return $SearchResults
+        }
+        AfDatabase {
+            $Search = [OSIsoft.AF.Search.AFAnalysisSearch]::new($AfDatabase, "AfAnalysisSearch", "name:*")
+            $Search.CacheTimeout = [TimeSpan]::FromMinutes(10)
+            Write-Debug "$($Search.GetTotalCount()) AFAnalyses found."
+            $SearchResults = $Search.FindObjects()
+            return [OSIsoft.AF.Analysis.AFAnalysis[]]$SearchResults
+        }
+    }
 }
 
 function Get-OpenAFEventFrames {
