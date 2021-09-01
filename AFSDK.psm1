@@ -78,29 +78,6 @@ function Get-AfAnalysesOutputPiPoints {
     # return [OSIsoft.AF.PI.PIPoint[]]$PiPoints
 }
 
-function Get-AllAfAnalysesFromAfServer {
-    param(
-        [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [String]
-        $AfServerName
-        )
-    
-    $AfServer = [OSIsoft.AF.PISystems]::new()[$AfServerName]
-    $Afdatabases=$afserver.Database
-    
-    foreach($database in $Afdatabases){
-        $searchTokens = [System.Collections.ArrayList]@()
-        $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
-        [OSIsoft.AF.Search.AFSearchFilter]::Name,
-        [OSIsoft.AF.Search.AFSearchOperator]::Equal,
-        "*"
-        )) | Out-Null
-        [osisoft.af.search.afanalysissearch]$AFAnalysisSearch = [osisoft.af.search.afanalysissearch]::new($database, "AFAnalysisSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
-        $AFAnalyses = $AFAnalysisSearch.FindObjects(0, $true, 500)
-        $AFAnalysesCombined += $AFAnalyses 
-        
-    }
-    return $AFAnalysesCombined
 function Get-AllAfAnalyses {
     # Returns an IEnumerable of all AF Analyses from an AF Database or AF Server
     [CmdletBinding()]
