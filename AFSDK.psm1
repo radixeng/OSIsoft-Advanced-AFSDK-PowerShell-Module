@@ -11,50 +11,16 @@ function Get-AfAnalysesInputPiPoints {
     Function returns a list of PI Points that act as inputs for a list of analyses
     
     #>
-    [CmdletBinding(DefaultParameterSetName="AnalysisObjectKnown")]
+    [CmdletBinding()]
     Param(
-        [Parameter(position = 4, Mandatory = $false,  ParameterSetName = "FindAnalysisObject")]
-        [Parameter(position = 0, Mandatory = $true, ValueFromPipeline, ParameterSetName = "AnalysisObjectKnown")]
+        [Parameter(position = 0, Mandatory = $true, ValueFromPipeline)]
         [OSIsoft.AF.Analysis.AFAnalysis[]]
-        $AfAnalysesObjects,
-
-        [Parameter(position = 0, Mandatory = $true, ParameterSetName = "FindAnalysisObject")]
-       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
-        [String]
-        $AfServerName,
-
-        [Parameter(position = 1, Mandatory = $true,  ParameterSetName = "FindAnalysisObject")]
-       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
-        [String]
-        $AfDatabaseName,
-
-        [Parameter(position = 2, Mandatory = $true,  ParameterSetName = "FindAnalysisObject")]
-       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
-        [String]
-        $AfElementName,
-
-        [Parameter(position = 3, Mandatory = $true,  ParameterSetName = "FindAnalysisObject")]
-       # [Parameter(Mandatory = $false,  ParameterSetName = "AnalysisObjectKnown")]
-        [String]
-        $AfAnalysisName
-
-    )
-    if ($AfServerName -eq ""){
         $AfAnalysesObjects
-    }
-    else{
-        [OSIsoft.AF.Analysis.AFAnalysis[]] $AfAnalysesObjects = [OSIsoft.AF.AFObject]::FindObject("\\$AfServerName\$AfDatabaseName\$AfElementName\Analyses[$AfAnalysisName]")
-    }
-    
+    )
     $InputAfAttributes = $AfAnalysesObjects.AnalysisRule.GetConfiguration().GetInputs()
-    # TODO: Ensure no duplicates are returned
     $PiPoints = $InputAfAttributes.PIPoint.Where({$_ -ne $null})
-    $uniquePiPoints = [System.Collections.ArrayList[]]@()
-    ForEach ($pipoint in $PiPoints) {
-        if($uniquePiPoints -notcontains $pipoint){
-            $uniquePiPoints.add($PiPoint)
-        }
-    }
+    $uniquePiPoints = $PiPoints | Select-Object -Unique
+    # $uniquePiPoints = [linq.Enumerable]::Distinct($PiPoints) <-- Not sure which one is more efficient. Both Seem light-weight.
     return $uniquePiPoints
 }
 
@@ -68,14 +34,9 @@ function Get-AfAnalysesOutputPiPoints {
     )
     $InputAfAttributes = $AfAnalyses.AnalysisRule.GetConfiguration().GetOutputs()
     $PiPoints = $InputAfAttributes.PIPoint.Where({$_ -ne $null})
-    $uniquePiPoints = [System.Collections.ArrayList[]]@()
-    ForEach ($pipoint in $PiPoints) {
-        if($uniquePiPoints -notcontains $pipoint){
-            $uniquePiPoints.add($PiPoint)
-        }
-    }
+    $uniquePiPoints = $PiPoints | Select-Object -Unique
+    # $uniquePiPoints = [linq.Enumerable]::Distinct($PiPoints) <-- Not sure which one is more efficient. Both Seem light-weight.
     return $uniquePiPoints
-    # return [OSIsoft.AF.PI.PIPoint[]]$PiPoints
 }
 
 function Get-AllAfAnalyses {
@@ -144,9 +105,9 @@ function Get-OpenAFEventFrames {
     $AfServer = [OSIsoft.AF.PISystems]::new()[$AfServerName]
     #Create empty list of databases
     $Afdatabases = [System.Collections.ArrayList]@()
-    #Set default time range to 14d if user does not provide an argument
+    #Set default time range to 0 (which is the minvalue for AF time 1970) if user does not provide an argument
     if($inputRange -eq $null){
-        $inputRange = "14d"
+        $inputRange = "0"
     }
     #Set default databases to "all" if user does not provide an argument
     if($databaseName -ne $null){
@@ -163,7 +124,7 @@ function Get-OpenAFEventFrames {
         $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
         [OSIsoft.AF.Search.AFSearchFilter]::Start,
         [OSIsoft.AF.Search.AFSearchOperator]::GreaterThan,
-        [OSIsoft.AF.Time.AFTime]::new(-$inputRange)
+        [OSIsoft.AF.Time.AFTime]::new($inputRange)
         )) | Out-Null
         #Search all eventframes for using searchtokens
         [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
@@ -178,8 +139,27 @@ function Get-OpenAFEventFrames {
     }
 }
 
-function Stop-EventFrames {
-    # Set the current time as the end time for a list of AF EventFrames.
+function Stop-AfEventFrames {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [OSIsoft.AF.EventFrame.AFEventFrame[]]
+        $AFEventFrames,
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $LogFilePath
+        # TODO: Find a way to validate the log file path to make sure it is a valid one.
+        # Can incorporate own log function if available.
+    )
+   
+    for ($i = 0; $i -lt $AFEventFrames.Count; $i++) {
+        # $afeventframes[$i].CheckOut()
+        [OSIsoft.AF.EventFrame.AFEventFrame]$Afeventframes[$i].setendTime("*")
+        $afeventframes[$i].CheckIn() 
+    }
+   
+    # return $AFEventFrames
+    # does not require a return.
 }
 
 function Get-PiVisionDisplayAfAttributes {}
@@ -211,7 +191,7 @@ function Convert-ObjectsToPsCustomObjects{
         #Creates an Ordered Dictionary for each object to preserve the order  
         $ObjDict = [Collections.Specialized.OrderedDictionary]::new()
         $defaultpropertyList = $object.PSObject.Properties.Name
-        if($Properties -eq $null){
+        if($null -eq $Properties){
             foreach($property in $defaultpropertyList){
                 $ObjDict.Add($property, $object.$property)
             }
