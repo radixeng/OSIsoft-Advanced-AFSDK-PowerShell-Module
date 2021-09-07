@@ -106,15 +106,15 @@ function Get-OpenAFEventFrames {
     #Create empty list of databases
     $Afdatabases = [System.Collections.ArrayList]@()
     #Set default time range to 0 (which is the minvalue for AF time 1970) if user does not provide an argument
-    if($inputRange -eq $null){
+    if($inputRange -eq ""){
         $inputRange = "0"
     }
     #Set default databases to "all" if user does not provide an argument
-    if($databaseName -ne $null){
-        $Afdatabases = $databaseName
+    if($databaseName -eq ""){
+        $Afdatabases = $Afserver.Databases
     }
     else{
-        $Afdatabases = $Afserver.Databases
+        $Afdatabases = $databaseName
     }
 
     foreach($AfDatabase in $Afdatabases) {
@@ -124,19 +124,22 @@ function Get-OpenAFEventFrames {
         $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
         [OSIsoft.AF.Search.AFSearchFilter]::Start,
         [OSIsoft.AF.Search.AFSearchOperator]::GreaterThan,
-        [OSIsoft.AF.Time.AFTime]::new($inputRange)
+        [OSIsoft.AF.Time.AFTime]::new("*-$inputRange")
         )) | Out-Null
         #Search all eventframes for using searchtokens
         [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
         $count = $AFEventFrameSearch.GetTotalCount()
         #output number of Event Frames found for sanity check
-        Write-Host "$count EF's found."
+        Write-Host "$count EF's found in $afdatabase."
         #Pull all eventframe objects in batches of 500
         $AFEventFrames = $AFEventFrameSearch.FindObjects(0, $true, 500)
         #Return list of EventFrame Objects
-        return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AFEventFrames
-        
+        $AfEventFramesList = [System.Collections.ArrayList]@()
+        $AfEventFramesList.Add($AFeventFrames)
     }
+    return $AfEventFramesList
+        
+    
 }
 
 function Stop-AfEventFrames {
