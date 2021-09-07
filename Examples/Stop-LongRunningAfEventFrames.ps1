@@ -39,31 +39,18 @@ foreach($afDatabase in $afDatabases) {
     $AFEventFrameSearch = [osisoft.af.search.AFEventFrameSearch]::new($AFdatabase,"EventFrameSearch_Test", $searchtokens)
     
     $count = $AFEventFrameSearch.gettotalCount()
-    Write-Host "Found $count event frames"
+    Write-Host "Found $count event frames in $afDatabase"
     [OSIsoft.AF.EventFrame.AFEventFrame[]]$AFEventFrameResults = $Afeventframesearch.findObjects(0,$true,500)
-    
-    $AFEvenFrameResults[]
-    # $AFEventFrameResults.Gettype()
-    
-    # foreach($AfEventFrame in $AfeventframeResults){
-    #     [OSIsoft.AF.EventFrame.AFEventFrame]$Afeventframe.setendTime("*")
-    #     $afeventframe.CheckIn()
-    # }
     
     Stop-AfEventFrames -afeventframes $AFEventFrameResults
     
-    # $afeventframes_stopped = Stop-AfEventFrames -afeventframes $AFEventFrameResults
-    
-    # $afeventframes_stopped.checkin()
-    
+    $afdb = $afdatabases[0]
+    $afeventframeslist[0].Database.CheckIn()
+    $afDb.Refresh()
     
     $AFEventFrameSearch = [osisoft.af.search.AFEventFrameSearch]::new($AFdatabase,"EventFrameSearch_Test", $searchtokens)
     
     $count = $AFEventFrameSearch.gettotalCount()
     
-    Write-Host "After finishing the Stop-AFeventFrame Function I found $count event frames"
+    Write-Host "After finishing the Stop-AFeventFrame Function I found $count event frames in $afdatabase"
 }
-
-$afdb = $afdatabases[0]
-$afeventframeslist[0].Database.CheckIn()
-$afDb.Refresh()
