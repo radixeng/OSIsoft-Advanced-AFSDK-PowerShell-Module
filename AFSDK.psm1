@@ -89,59 +89,98 @@ function Get-OpenAFEventFrames {
     #> 
 
     Param(
-        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName)]
+        [Parameter(Mandatory=$true, ParameterSetName='AfServer')]
+        [OSIsoft.AF.PISystem] #turn into [osisoft.af.pisystems]
+        $AfServer,
+       
+        [Parameter(mandatory=$true, ParameterSetName='AfDatabase')]
         [string]
-        $AfServerName,
+        $AfDatabase,
 
         [Parameter(Mandatory=$false)]
         [string]
-        $inputRange,
-
-        [Parameter(mandatory =$false)]
-        [string]
-        $databaseName
+        $LongerThan
     )
+    switch ($PSCmdlet.ParameterSetName)
+    {
+        'AfServer' {
+            $AfServerEfs = [Generic.Collections.List[OSIsoft.AF.EventFrame.AFEventFrame]]::new()
+            foreach($AfDatabase in $AfServer.Databases)
+            {
+                $AfDatabaseEfs = Get-OpenAFEventFrames -Database $AfDatabase -LongerThan $LongerThan
+                for ($i=0; $i -lt $AfDatabaseEFs.Count; $i++)
+                {
+                    $AfServerEFs.Add($AFDatabaseEfs[$i]) | Out-Null
+                }
+            }
+            return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AfServerEfs
+        }
+        'AfDatabase' {
+                      
+            $searchTokens = [Collections.Generic.List[OSIsosft.AF.Search.AFSearchToken]]@()
+            #Add search tokens to list
+            if ($LongerThan)
+            {
+                $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
+                    [OSIsoft.AF.Search.AFSearchFilter]::Start,
+                    [OSIsoft.AF.Search.AFSearchOperator]::GreaterThan,
+                    [OSIsoft.AF.Time.AFTime]::new("*-$LongerThan")
+                )) | Out-Null
+            }
+
+            $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
+                [OSIsoft.AF.Search.AFSearchFilter]::InProgress,
+                [OSIsoft.AF.Search.AFSearchOperator]::Equal,
+                $true
+            )) | Out-Null
+
+            [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
+            $count = $AFEventFrameSearch.GetTotalCount()
+            Write-Host "$count EF's found in $afdatabase."
+
+            $AFEventFrames = [Linq.Enumerable]::ToArray(
+                $AFEventFrameSearch.FindObjects(0, $true, 500)
+            )
+            return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AfEventFrames
+
+    # [system.collections.arraylist]$AfEventFramesList = @()
+    #     }
+    # }
     #Create PI System instance using input AFservername
-    $AfServer = [OSIsoft.AF.PISystems]::new()[$AfServerName]
+    # $AfServer = [OSIsoft.AF.PISystems]::new()[$AfServerName]
     #Create empty list of databases
-    $Afdatabases = [System.Collections.ArrayList]@()
+    # $Afdatabases = [System.Collections.ArrayList]@()
     #Set default time range to 0 (which is the minvalue for AF time 1970) if user does not provide an argument
-    if($inputRange -eq ""){
-        $inputRange = "0"
-    }
-    #Set default databases to "all" if user does not provide an argument
-    if($databaseName -eq ""){
-        $Afdatabases = $Afserver.Databases
-    }
-    else{
-        $Afdatabases = $databaseName
-    }
-
-    foreach($AfDatabase in $Afdatabases) {
-        #Create empty list of search tokens
-        $searchTokens = [System.Collections.ArrayList]@()
-        #Add search tokens to list
-        $searchTokens.Add([OSIsoft.AF.Search.AFSearchToken]::new(
-        [OSIsoft.AF.Search.AFSearchFilter]::Start,
-        [OSIsoft.AF.Search.AFSearchOperator]::GreaterThan,
-        [OSIsoft.AF.Time.AFTime]::new("*-$inputRange")
-        )) | Out-Null
-        #Search all eventframes for using searchtokens
-        [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
-        $count = $AFEventFrameSearch.GetTotalCount()
-        #output number of Event Frames found for sanity check
-        Write-Host "$count EF's found in $afdatabase."
-        #Pull all eventframe objects in batches of 500
-        $AFEventFrames = $AFEventFrameSearch.FindObjects(0, $true, 500)
-        #Return list of EventFrame Objects
-        $AfEventFramesList = [System.Collections.ArrayList]@()
-        $AfEventFramesList.Add($AFeventFrames)
-    }
-    return $AfEventFramesList
-        
+    # if($inputRange -eq ""){
+    #     $inputRange = "0"
+    # }
+    # #Set default databases to "all" if user does not provide an argument
+    # if($databaseName -eq ""){
+    #     $Afdatabases = $Afserver.Databases
+    # }
+    # else{
+    #     $Afdatabases = $databaseName
+    # }
+    #Create empty list of search tokens
     
-}
 
+    # foreach($AfDatabase in $Afdatabases) {
+    #     #Search all eventframes for using searchtokens
+    #     [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
+    #     $count = $AFEventFrameSearch.GetTotalCount()
+    #     $AfEventFramesList.add($AFEventFrameSearch)
+    #     #output number of Event Frames found for sanity check
+    #     Write-Host "$count EF's found in $afdatabase."
+    #     #Pull all eventframe objects in batches of 500
+    #     #Return list of EventFrame Objects
+
+    # }
+    # $AFEventFrames = $AfEventFramesList.FindObjects(0, $true, 500)
+    # return $AfEventFrames
+        }
+    
+    }
+}
 function Stop-AfEventFrames {
     Param(
         [Parameter(Mandatory=$true)]
