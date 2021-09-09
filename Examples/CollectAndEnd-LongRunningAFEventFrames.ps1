@@ -1,7 +1,8 @@
 using Assembly OSIsoft.AFSDK
 
 $Today = Get-Date -Format "yyyy-MM-dd"
-$OutputFileDir = "..\..\..\Scripts"
+# $OutputFileDir = "..\..\..\Scripts"
+$OutputFileDir = "C:\Scripts\New-CsvOfLongRunningEventFrames\output"
 $OutputFileName = "AnalysisDependencies_$PI_SYSTEM_NAME_$Today.csv"
 $OutputFilePath = Join-Path $OutputFileDir $OutputFileName
 
@@ -129,5 +130,5 @@ $AFOpenEventFrames = Get-OpenAfEventFrames -AfServer $afserver -LongerThan "14d"
 
 $AfOpenEventFramesPS = Convert-ObjectsToPsCustomObjects $AfOpenEventFrames
 
-# $afopeneventframesPS | Export-Csv -Path $OutputFilePath
-[PSCustomObject[]]$AfOpenEventFramesPS | Out-GridView
+$afopeneventframesPS | Export-Csv -Path $OutputFilePath
+# [PSCustomObject[]]$AfOpenEventFramesPS | Out-GridView
