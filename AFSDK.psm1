@@ -94,7 +94,7 @@ function Get-OpenAFEventFrames {
         $AfServer,
        
         [Parameter(mandatory=$true, ParameterSetName='AfDatabase')]
-        [string]
+        [OSIsoft.AF.AFDatabase]
         $AfDatabase,
 
         [Parameter(Mandatory=$false)]
@@ -104,10 +104,10 @@ function Get-OpenAFEventFrames {
     switch ($PSCmdlet.ParameterSetName)
     {
         'AfServer' {
-            $AfServerEfs = [Generic.Collections.List[OSIsoft.AF.EventFrame.AFEventFrame]]::new()
+            $AfServerEfs = [System.Collections.Generic.List[OSIsoft.AF.EventFrame.AFEventFrame]]::new()
             foreach($AfDatabase in $AfServer.Databases)
             {
-                $AfDatabaseEfs = Get-OpenAFEventFrames -Database $AfDatabase -LongerThan $LongerThan
+                $AfDatabaseEfs = Get-OpenAFEventFrames -afDatabase $AfDatabase -LongerThan $LongerThan
                 for ($i=0; $i -lt $AfDatabaseEFs.Count; $i++)
                 {
                     $AfServerEFs.Add($AFDatabaseEfs[$i]) | Out-Null
@@ -116,8 +116,8 @@ function Get-OpenAFEventFrames {
             return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AfServerEfs
         }
         'AfDatabase' {
-                      
-            $searchTokens = [Collections.Generic.List[OSIsosft.AF.Search.AFSearchToken]]@()
+            
+            $searchTokens = [System.Collections.Generic.List[OSIsoft.AF.Search.AFSearchToken]]::new()
             #Add search tokens to list
             if ($LongerThan)
             {
@@ -134,7 +134,7 @@ function Get-OpenAFEventFrames {
                 $true
             )) | Out-Null
 
-            [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [OSIsoft.AF.Search.AFSearchToken[]]$searchTokens)
+            [OSIsoft.AF.Search.AFEventFrameSearch]$AFEventFrameSearch = [OSIsoft.AF.Search.AFEventFrameSearch]::new($afDatabase, "EventFrameSearch", [System.Collections.Generic.List[OSIsoft.AF.Search.AFSearchToken]]$searchTokens)
             $count = $AFEventFrameSearch.GetTotalCount()
             Write-Host "$count EF's found in $afdatabase."
 
