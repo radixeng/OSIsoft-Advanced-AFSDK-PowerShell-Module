@@ -103,6 +103,9 @@ function Convert-ObjectsToPsCustomObjects{
         if($null -eq $Properties){
             foreach($property in $defaultpropertyList){
                 $ObjDict.Add($property, $object.$property)
+                # if ($property -eq "") {
+                    
+                # }
             }
             #Casts Ordered Dictionary into a PSCustomObject and adds it to a list of PSCustomObjects
             $PSCustomObjects.Add([PSCustomObject]$ObjDict)
