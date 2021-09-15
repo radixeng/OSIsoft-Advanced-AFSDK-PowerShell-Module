@@ -162,6 +162,7 @@ function Stop-AfEventFrames {
    
     for ($i = 0; $i -lt $AFEventFrames.Count; $i++) {
         # $afeventframes[$i].CheckOut()
+        [osisoft.af.eventframe.AFeventframe]$AFEventFrames[$i].undocheckout($true)
         [OSIsoft.AF.EventFrame.AFEventFrame]$Afeventframes[$i].setendTime("*")
         $afeventframes[$i].CheckIn() 
     }
@@ -172,7 +173,7 @@ function Stop-AfEventFrames {
 
 function Get-PiVisionDisplayAfAttributes {}
 
-function Get-PiPointProperties {}
+function Get-PiPointProperties {} #get-pipointsummaries app027
 
 function Convert-ObjectsToPsCustomObjects{
     <# 
