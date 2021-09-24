@@ -142,9 +142,7 @@ function Get-OpenAFEventFrames {
                 $AFEventFrameSearch.FindObjects(0, $true, 500)
             )
             return [OSIsoft.AF.EventFrame.AFEventFrame[]]$AfEventFrames
-
         }
-    
     }
 }
 function Stop-AfEventFrames {
@@ -166,9 +164,6 @@ function Stop-AfEventFrames {
         [OSIsoft.AF.EventFrame.AFEventFrame]$Afeventframes[$i].setendTime("*")
         $afeventframes[$i].CheckIn() 
     }
-   
-    # return $AFEventFrames
-    # does not require a return.
 }
 
 function Get-PiVisionDisplayAfAttributes {}
@@ -215,8 +210,26 @@ function Convert-ObjectsToPsCustomObjects{
             $PSCustomObjects.Add([PSCustomObject]$ObjDict)
         }
     }
- 
- 
      return $PSCustomObjects
 }
 
+function Remove-AfEventFrames {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [OSIsoft.AF.EventFrame.AFEventFrame[]]
+        $AFEventFrames,
+
+        [Parameter(Mandatory=$false)]
+        [string]
+        $LogFilePath
+        # TODO: Find a way to validate the log file path to make sure it is a valid one.
+        # Can incorporate own log function if available.
+    )
+   
+    for ($i = 0; $i -lt $AFEventFrames.Count; $i++) {
+        # $afeventframes[$i].CheckOut()
+        [osisoft.af.eventframe.AFeventframe]$AFEventFrames[$i].undocheckout($true)
+        [OSIsoft.AF.EventFrame.AFEventFrame]$Afeventframes[$i].Delete()
+        $afeventframes[$i].CheckIn() 
+    }
+}
